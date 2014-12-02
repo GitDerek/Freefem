@@ -6,7 +6,7 @@ border d(t=0.5,1){x=0.5;y=t;};
 border e(t=0.5,1){x=1-t;y=1;}; //inflow
 border f(t=0,1){x=0;y=1-t;};
 
-int n = 5;
+int n = 1;
 mesh Th = buildmesh ( a(6*n) + b(4*n) + c(4*n) +d(4*n) + e(4*n) + f(6*n)); 
 plot(Th, wait = 1);
 
@@ -32,31 +32,35 @@ while (t < T) {
 
     // Compute tentative velocity step
     solve pb4u(u1star, w) 
-    = int2d(Th)(u1star * w / dt + nu * (dx(u1star) * dx(w) + dy(u1star) * dy(w))) 
-    + int2d(Th)(u1old * dx(u1old) * w + u2old * dy(u1old) * w)
-    - int2d(Th)(u1old*w/dt) + on(a, c, d, f, u1star = 0);
+    	= int2d(Th)(u1star * w / dt + nu * (dx(u1star) * dx(w) + dy(u1star) * dy(w))) 
+    	+ int2d(Th)(u1old * dx(u1old) * w + u2old * dy(u1old) * w)
+    	- int2d(Th)(u1old * w / dt) 
+    	+ on(a, c, d, f, u1star = 0);
 
    
     solve pb4v(u2star, w) 
-    = int2d(Th)(u2star * w / dt + nu * (dx(u2star) * dx(w) + dy(u2star) * dy(w)))
-    + int2d(Th)(u1old * dx(u2old) * w + u2old * dy(u2old) * w)
-    + on(a,c,d,f,u2star = 0);
+    	= int2d(Th)(u2star * w / dt + nu * (dx(u2star) * dx(w) + dy(u2star) * dy(w)))
+    	+ int2d(Th)(u1old * dx(u2old) * w + u2old * dy(u2old) * w)
+    	- int2d(Th)(u2old * w /dt)
+    	+ on(a, c, d, f, u2star = 0);
 
     // Pressure correction
     solve pb4p(p, q) 
-    = int2d(Th)(dx(p) * dx(q) + dy(p) * dy(q))
-    + int2d(Th)(dx(u1star) * q + dy(u2star) * q) 
-    + on(b, p=0) + on(e, p=sin(3.0*t));
+    	= int2d(Th)(dx(p) * dx(q) + dy(p) * dy(q))
+    	+ int2d(Th)((dx(u1star) * q + dy(u2star) * q) / dt) 
+    	+ on(b, p = 0) + on(e, p = sin(3.0 * t));
 
     // Velocity correction
     solve update4u1(u1, w)
         = int2d(Th)(u1 * w)
-        - int2d(Th)(u1star * w) + int2d(Th)(dt * dx(p) * w)
+        - int2d(Th)(u1star * w) 
+        + int2d(Th)(dt * dx(p) * w)
         + on(a, c, d, f, u1 = 0);
 
     solve update4u2(u2, w)
         = int2d(Th)(u2 * w)
-        - int2d(Th)(u2star * w) + int2d(Th)(dt * dy(p) * w)
+        - int2d(Th)(u2star * w) 
+        + int2d(Th)(dt * dy(p) * w)
         + on(a, c, d, f, u2 = 0);
 
     // Plot solution
